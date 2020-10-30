@@ -8,79 +8,95 @@ canvas.width = WIDTH;
 canvas.height = HEIGHT;
 
 // QuickSort
-let data = []; // Array to sort
-const arraySize = 20; // Array size
+let data = [] // arrayay to sort
+let states = []; // animation
+const arrayaySize = 100; // arrayay size
 
-// Setup
-function init() {
-    for (let i = 0; i < arraySize; i++) {
-        data.push(rand(1, HEIGHT - 10));
+async function quickSort(array, start, end) {
+    if (start >= end) {
+        return;
     }
+    let index = await partition(array, start, end);
+    states[index] = -1;
+
+    await Promise.all([
+        quickSort(array, start, index - 1),
+        quickSort(array, index + 1, end)
+    ]);
 }
 
-// Show
-function show(show) {
-    if (!show) return; // ONly show if pass non falsy argument for debug purposes
+async function partition(array, start, end) {
+    for (let i = start; i < end; i++) {
+        states[i] = 1;
+    }
+
+    let pivotValue = array[end];
+    let pivotIndex = start;
+    states[pivotIndex] = 0;
+    for (let i = start; i < end; i++) {
+        if (array[i] < pivotValue) {
+            await swap(array, i, pivotIndex);
+            states[pivotIndex] = -1;
+            pivotIndex++;
+            states[pivotIndex] = 0;
+        }
+    }
+    await swap(array, pivotIndex, end);
+
+    for (let i = start; i < end; i++) {
+        if (i != pivotIndex) {
+            states[i] = -1;
+        }
+    }
+
+    return pivotIndex;
+}
+
+async function swap(array, a, b) {
+    await sleep(50);
+    let temp = array[a];
+    array[a] = array[b];
+    array[b] = temp;
+}
+
+function drawBar(arrayay, index) {
+    const offset = (WIDTH / arrayaySize);
+    const barWidth = (WIDTH / arrayaySize) - 1;
+    const barHeight = HEIGHT -  arrayay[index];
+    context.fillRect(index * offset, barHeight, barWidth, HEIGHT);
+}
+
+function draw() {
     context.clearRect(0, 0, WIDTH, HEIGHT);
-    for (let i = 0; i < arraySize; i++) {
-        drawBar(data, i)
+    for (let i = 0; i < data.length; i++) {
+        if (states[i] == 0) {
+            context.fillStyle = '#f25760';
+        } else if (states[i] == 1) {
+            context.fillStyle = '#169FB7';
+        } else {
+            context.fillStyle = '#FFFFFF';
+        }
+        drawBar(data, i);
     }
+    
+    requestAnimationFrame(draw);
 }
 
-function drawBar(array, index) {
-    const offset = (WIDTH / arraySize);
-    const barWidth = (WIDTH / arraySize) - 1;
-
-    context.fillStyle = 'white';
-    context.fillRect(index * offset, 0, barWidth, array[index]);
-}
-
-/* Return a random number between min and max */
 function rand(min, max) {
     return Math.floor(Math.random() * (max - min) + min);
 }
 
-function swap(array, leftIndex, rightIndex) {
-    let temp = array[leftIndex];
-    array[leftIndex] = array[rightIndex];
-    array[rightIndex] = temp;
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function partition(array, left, right) {
-    let pivot = array[Math.floor((right + left) / 2)], //middle element
-        i = left, //left pointer
-        j = right; //right pointer
-    while (i <= j) {
-        while (array[i] < pivot) {
-            i++;
-        }
-        while (array[j] > pivot) {
-            j--;
-        }
-        if (i <= j) {
-            swap(array, i, j);
-            i++;
-            j--;
-        }
+// Setup
+function init() {
+    for (let i = 0; i < arrayaySize; i++) {
+        data.push(rand(1, HEIGHT - 10));
     }
-    return i;
+    draw();
 }
-
-function quickSort(array, left, right) {
-    let index;
-    if (array.length > 1) {
-        index = partition(array, left, right); //index returned from partition
-        if (left < index - 1) { //more elements on the left side of the pivot
-            quickSort(array, left, index - 1);
-        }
-        if (index < right) { //more elements on the right side of the pivot
-            quickSort(array, index, right);
-        }
-    }
-    return array;
-}
-
 
 init();
 quickSort(data, 0, data.length - 1);
-show(true);
